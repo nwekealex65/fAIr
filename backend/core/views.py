@@ -305,9 +305,45 @@ def run_task_status(request, run_id: str):
         return Response(result)
 
 
-import multiprocessing
-
 DEFAULT_TILE_SIZE = 256
+from tensorflow import keras
+
+model_cache = {}
+last_used_time = {}
+max_model_in_cache = 5
+
+
+def load_model(checkpoint_path):
+    return keras.models.load_model(checkpoint_path)
+
+
+def get_model(checkpoint_path):
+    global model_cache, last_used_time
+
+    if checkpoint_path in model_cache:
+        print("Importing Model from Cache")
+        last_used_time[checkpoint_path] = time.time()
+        return model_cache[checkpoint_path]
+
+    model = load_model(checkpoint_path)
+    if len(model_cache) < max_model_in_cache:
+        print("Inserting model to cache")
+        model_cache[checkpoint_path] = model
+        last_used_time[checkpoint_path] = time.time()
+    return model
+
+
+def check_idle_models():
+    global model_cache, last_used_time
+    print("Checking for ideal models")
+    # Check if any model has not been used for 5 minutes
+    for checkpoint_path in list(model_cache.keys()):
+        if time.time() - last_used_time[checkpoint_path] > 300:
+            # Unload the model and remove it from cache
+            print(f"Removing from cache : {checkpoint_path}")
+            model_cache[checkpoint_path].unload()
+            del model_cache[checkpoint_path]
+            del last_used_time[checkpoint_path]
 
 
 class PredictionView(APIView):
@@ -369,12 +405,17 @@ class PredictionView(APIView):
                         f"training_{training_instance.id}",
                         "checkpoint.tf",
                     )
+                check_idle_models()
+                print(f"Number of models in cache: {len(model_cache)}")
+                start = time.time()
+                model = get_model(model_path)
+                print(f"It took {round(time.time()-start)} sec to load model")
                 # Spawn a new process for the prediction task
                 with ProcessPoolExecutor(max_workers=1) as executor:
                     try:
                         future = executor.submit(
                             predict,
-                            model_path,
+                            model,
                             temp_path,
                             prediction_output,
                             deserialized_data["confidence"] / 100
@@ -387,10 +428,10 @@ class PredictionView(APIView):
                     except TimeoutError:
                         print("Prediction Timeout")
                         return Response(
-                            "Prediction Timeout , Took more than 30 sec : Use smaller models/area",
+                            "Prediction Timeout , Took more than 45 sec : Use smaller models/area",
                             status=500,
                         )
-
+                del model
                 print("Prediction is Complete, Vectorizing images")
                 start = time.time()
 
@@ -424,7 +465,7 @@ class PredictionView(APIView):
             except Exception as ex:
                 print(ex)
                 shutil.rmtree(temp_path)
-                return Response("Prediction Error", status=500)
+                return Response("Null Prediction", status=500)
 
 
 @api_view(["POST"])
