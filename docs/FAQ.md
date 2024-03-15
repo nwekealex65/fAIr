@@ -72,3 +72,32 @@ A : Absolutely! The fAIr project welcomes contributions related to new AI models
 **Q : What kind of support can I expect as a developer contributing to fAIr?**
 
 A : As a developer contributing to fAIr, you can receive support and guidance from the project maintainers and the community. The maintainers can help address technical questions, review your contributions, and provide feedback. The community also offers a collaborative environment where you can interact with other contributors and share knowledge.
+
+## Community Managers
+**Q : Why can I only map buildings?**
+
+A : fAIr currently only works with buildings. We are hoping in the future to expand to other feature types.
+
+<hr>
+
+**Q : Can we edit with JSON in fAir?**
+
+A : Yes, that option is now available.
+
+<hr>
+
+**Q : If I map the same area  but in another editor, will fAIr take into account this data?**
+
+A : Regardless of which editing tool you use, once it goes into OSM, it will be taken into fAIr as long as you click “fetch OSM” after they map
+
+<hr>
+
+**Q : If I map a little outside the task, selected AOI,  is the data also fed into fAIr? Or is it ignored?**
+
+A : Anything that intersects with the AOI boundary is needed and will be counted in fAIr training data, buildings fully outside the boundary won’t be counted for training dataset but they are already in OSM
+
+<hr>
+
+**Q : I don’t remember what to do when I’m finished, just “fetch”?**
+
+A : Yes, after mapping the selected AOI, you should come back to fAIr and fetch so you will see them  in fAIr.
